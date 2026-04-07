@@ -2,32 +2,24 @@
 safezone-backend/
 ├── 📁 src/main/java/com/safezone/
 │   │
-│   ├── ⚙️ config/                 # Configuraciones transversales
-│   │   ├── 🔐 security/           # JWT, Filtros y CustomUserDetailsService
-│   │   ├── ☁️ azure/              # Configuración de Cosmos DB & Blob Storage
-│   │   └── 🔄 mapper/             # Configuración de ModelMapper o MapStruct
+│   ├── 🌐 web/                        # CAPA DE ENTRADA (API REST)
+│   │   └── 🎮 controller/             # Controladores que reciben las peticiones [3]
+│   │       ├── AuthController.java
+│   │       ├── UserController.java
+│   │       └── CaseController.java
 │   │
-│   ├── 🚨 exception/              # Gestión Global de Errores
-│   │   ├── 🌐 GlobalExceptionHandler.java
-│   │   ├── 📄 ErrorResponse.java      # DTO estandarizado para respuestas de error
-│   │   └── 🛠️ custom/             # Excepciones de negocio (BusinessException, etc.)
+│   ├── 🧩 domain/                     # CAPA DE DOMINIO (Lógica de Negocio) [1]
+│   │   ├── 📥 dto/                    # Objetos para transporte de datos [3]
+│   │   ├── 📋 service/                # Interfaces y lógica de negocio [3]
+│   │   └── 🗄️ repository/              # Especificación/Interfaces de repositorios [3]
 │   │
-│   ├── 📦 common/                 # Elementos compartidos por todos los módulos
-│   │   ├── 🏷️ enums/              # CaseStatus, UrgencyLevel, Role
-│   │   └── 🛠️ util/               # SecurityUtils, DateFormatter, Validators
+│   ├── 💾 persistence/                # CAPA DE PERSISTENCIA (Base de Datos) [3]
+│   │   ├── 📄 entity/                 # Clases mapeadas con @Entity [3], [4]
+│   │   └── 🛠️ crud/                   # Repositorios que extienden JpaRepository [3], [5]
 │   │
-│   └── 🧩 modules/                # LÓGICA DE NEGOCIO POR DOMINIO (CORE)
-│       ├── 🔑 auth/               # Gestión de Sesiones y Seguridad
-│       ├── 👤 user/               # Administración de perfiles (Víctima, Especialista)
-│       └── 📂 case/               # Núcleo del sistema: Gestión de Denuncias
-│           ├── 🎮 controller/     # Endpoints REST expuestos
-│           ├── 📋 service/        # Contratos de lógica de negocio (Interfaces)
-│           ├── 🛠️ service/impl/   # Implementación detallada de la lógica
-│           ├── 🗄️ repository/     # Capa de datos (Azure Cosmos DB)
-│           ├── 📥 dto/request/    # Objetos de entrada con validaciones (Bean Validation)
-│           ├── 📤 dto/response/   # Objetos de salida protegidos (Privacy-First)
-│           ├── 📄 model/          # Documentos/Entidades (@Container)
-│           └── 🔄 mapper/         # Mapeo específico Entity ↔ DTO
+│   ├── ⚙️ config/                     # Configuraciones transversales (Seguridad, Azure, Mappers)
+│   ├── 🚨 exception/                  # Gestión global de errores y excepciones personalizadas
+│   └── 📦 common/                     # Elementos compartidos (Enums, Utils)
 │
 └── 🧪 src/test/java/com/safezone/
     ├── 🧩 modules/                # Pruebas Unitarias espejo por cada módulo

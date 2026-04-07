@@ -1,41 +1,38 @@
 package SafeZone.SafeZoneBackend.exception;
 
-import SafeZone.SafeZoneBackend.exception.custom.BusinessException;
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import SafeZone.SafeZoneBackend.domain.dto.ErrorResponse;
+import com.azure.core.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
-import java.time.LocalDateTime;
-import java.util.stream.Collectors;
+import org.springframework.web.context.request.WebRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    // Manejo de recursos no encontrados (Ej: Un psicólogo busca un caso que no existe)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+            ResourceNotFoundException ex, WebRequest request) {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiError> handleBusiness(BusinessException ex, HttpServletRequest request) {
-        return buildResponse(ex.getHttpStatus(), ex.getMessage(), request);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage(),
+                request.getDescription(false)
+        );
+        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        String errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.joining(", "));
-        return buildResponse(HttpStatus.BAD_REQUEST, errors, request);
-    }
+    // Manejo de excepciones generales (Evita mostrar errores internos de Cosmos DB o Blob Storage)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGlobalException(
+            Exception ex, WebRequest request) {
 
-    private ResponseEntity<ApiError> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
-        ApiError error = ApiError.builder()
-                .timestamp(LocalDateTime.now())
-                .status(status.value())
-                .error(status.getReasonPhrase())
-                .message(message)
-                .path(request.getRequestURI())
-                .build();
-        return new ResponseEntity<>(error, status);
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "Ocurrió un error interno en el sistema. Contacte a soporte.",
+                request.getDescription(false)
+        );
+        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
