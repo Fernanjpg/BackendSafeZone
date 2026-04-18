@@ -1,4 +1,4 @@
 package SafeZone.SafeZoneBackend.domain.service;
 
-public class Servicioejemlpo {
+public class SeguimientosService {
 }
