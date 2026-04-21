@@ -25,7 +25,7 @@ private String denunciaid;
 private String remitenteid;
 private String destinatarioid;
 private String contenido;
-private String HOPLA;
+private Boolean leido;
 private Instant fechaenvio;
 
 

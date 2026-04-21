@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
 import java.security.PrivilegedAction;
+import java.time.Instant;
 
 @Container(containerName ="evidencias")
 @Data
@@ -20,9 +21,13 @@ import java.security.PrivilegedAction;
 public class Evidencias {
     @Id
     private String id;
-
     @PartitionKey
-    private String regionid;
+    private String denunciaid;
+    private String url_storage;
+    private String tipo_archivo;
+    private Instant fecha_carga;
+
+
 
 
 

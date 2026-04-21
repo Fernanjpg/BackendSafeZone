@@ -15,10 +15,10 @@ import org.springframework.data.annotation.Id;
 @AllArgsConstructor
 
 public class Regiones {
+    @Id
     @PartitionKey
     private String id;
 
     private String nombreRegion;
-    private String codigoPostal;
 
 }
