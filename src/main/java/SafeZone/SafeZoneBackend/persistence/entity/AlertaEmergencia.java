@@ -10,8 +10,11 @@ import org.springframework.data.annotation.Id;
 
 import java.time.Instant;
 
-// Representa una alerta enviada por la víctima al presionar el botón de pánico
-// RF-03: Captura de geolocalización GPS y entrada manual
+/**
+ * Representa una alerta de emergencia enviada por la víctima al presionar el botón de pánico.
+ * <p>
+ * RF-03: registra tanto coordenadas GPS como dirección manual, y la fuente que se usó.
+ */
 @Container(containerName = "alertas_emergencia")
 @Data
 @Builder
@@ -22,33 +25,46 @@ public class AlertaEmergencia {
     @Id
     private String id;
 
-    // Partition key — agrupamos por víctima
+    /** Partition key — agrupamos alertas por víctima para consultas eficientes. */
     @PartitionKey
     private String victimaId;
 
     private String victimaNombre;
     private String victimaEmail;
 
-    // Coordenadas GPS (pueden ser null si el navegador no las entregó)
+    // ── Coordenadas GPS ──────────────────────────────────────────────────────
+    // Pueden ser null si el navegador no entregó la ubicación o fue denegada.
     private Double latitud;
     private Double longitud;
-    private Double precision;  // metros
+    private Double precision;   // en metros
 
-    // Dirección escrita manualmente por la víctima
+    // ── Dirección ingresada manualmente ────────────────────────────────────
     private String direccionManual;
 
-    // Mensaje libre opcional
+    /**
+     * Fuente de ubicación registrada. Valores posibles:
+     * <ul>
+     *   <li>{@code "GPS"}          — se recibieron coordenadas automáticas</li>
+     *   <li>{@code "MANUAL"}       — la víctima ingresó la dirección a mano</li>
+     *   <li>{@code "GPS_Y_MANUAL"} — ambas fuentes disponibles</li>
+     * </ul>
+     */
+    private String fuenteUbicacion;
+
+    // ── Mensaje libre de la víctima ─────────────────────────────────────────
     private String mensaje;
 
-    // ACTIVA / ATENDIDA / RESUELTA
+    // ── Estado del ciclo de vida ────────────────────────────────────────────
+    /** ACTIVA → ATENDIDA → RESUELTA */
     private String estado;
 
     private Instant creadoEn;
 
-    // Quién atendió la alerta
+    // ── Profesional que atendió ─────────────────────────────────────────────
     private String atendidoPorId;
     private String atendidoPorNombre;
     private Instant atendidoEn;
 
     private Instant resueltoEn;
 }
+
