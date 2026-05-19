@@ -1,14 +1,31 @@
 package SafeZone.SafeZoneBackend.domain.dto;
 
 import SafeZone.SafeZoneBackend.persistence.entity.embebidos.RegionResumen;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import lombok.Data;
 
+@Data
 public class RegisterRequest {
+    @NotBlank(message = "El nombre no puede estar vacío")
     private String nombre;
+
+    @NotBlank(message = "El apellido no puede estar vacío")
     private String apellido;
+
+    @NotBlank(message = "El email no puede estar vacío")
+    @Email(message = "El formato del email no es válido")
+
     private String email;
+    @NotBlank(message = "La contraseña no puede estar vacía")
     private String password;
+    @NotBlank(message = "El telefono no puede estar vacía")
     private String telefono;
+    @NotBlank(message = "El rol es obligatorio")
+    @Pattern(regexp = "VICTIM|PSYCHOLOGIST|DEFENDER|ADMIN", message = "Rol no válido")
     private String roles;
+
     private RegionResumen region;
 
     // Constructor vacío (Obligatorio para que Spring lo entienda)
