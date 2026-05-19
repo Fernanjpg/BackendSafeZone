@@ -11,4 +11,5 @@ public interface UsuariosCrudRepository extends CosmosRepository<Usuarios,String
    @Override
    List<Usuarios> findAll();
    Optional<Usuarios> findByEmail(String email);
+   Optional<Usuarios> findByEmailAndRoles(String email, String roles);
 }
