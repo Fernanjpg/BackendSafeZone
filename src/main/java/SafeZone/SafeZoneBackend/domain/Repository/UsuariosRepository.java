@@ -12,12 +12,15 @@ public class UsuariosRepository {
     @Autowired
     private UsuariosCrudRepository crud;
 
-    public Usuarios buscarUsuarioPorEmail(String email){
-        return crud.findByEmail(email).orElse(null);
+    public Usuarios buscarUsuarioPorEmail(String email) {
+        List<Usuarios> resultados = crud.findByEmail(email);
+        // Retorna el primero si existe, sino null
+        return resultados.isEmpty() ? null : resultados.get(0);
     }
 
     public Usuarios buscarUsuarioPorEmailYRol(String email, String roles) {
-        return crud.findByEmailAndRoles(email, roles).orElse(null);
+        List<Usuarios> resultados = crud.findByEmailAndRoles(email, roles);
+        return resultados.isEmpty() ? null : resultados.get(0);
     }
 
     public Usuarios guardar(Usuarios usuarios){
