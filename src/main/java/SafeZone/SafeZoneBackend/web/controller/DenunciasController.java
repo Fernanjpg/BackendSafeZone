@@ -1,5 +1,6 @@
 package SafeZone.SafeZoneBackend.web.controller;
 
+import SafeZone.SafeZoneBackend.domain.dto.AsignacionCasoRequest;
 import SafeZone.SafeZoneBackend.domain.dto.DenunciaRequest;
 import SafeZone.SafeZoneBackend.domain.service.DenunciasService;
 import SafeZone.SafeZoneBackend.persistence.entity.Denuncias;
@@ -12,16 +13,14 @@ import java.util.List;
 @RequestMapping("/api/denuncias")
 public class DenunciasController {
 
-@Autowired
-public DenunciasService denunciasService;
+    @Autowired
+    public DenunciasService denunciasService;
 
-    // Listar todas las denuncias
     @GetMapping("/listar")
     public List<Denuncias> listar() {
         return denunciasService.listarTodas();
     }
 
-    // Buscar una por UsuariosID
     @GetMapping("/{id}")
     public List<Denuncias> obtenerPorId(@PathVariable String id) {
         return denunciasService.buscarPorUsuarioId(id);
@@ -32,24 +31,17 @@ public DenunciasService denunciasService;
         return denunciasService.guardar(denuncia);
     }
 
-    // Eliminar
+    // RF-09: Asignar caso a especialistas
+    @PatchMapping("/{id}/asignar")
+    public Denuncias asignarCaso(
+            @PathVariable String id,
+            @RequestBody AsignacionCasoRequest request
+    ) {
+        return denunciasService.asignarCaso(id, request);
+    }
+
     @DeleteMapping("/eliminar")
     public void eliminar(@PathVariable Denuncias denuncias) {
         denunciasService.eliminar(denuncias);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

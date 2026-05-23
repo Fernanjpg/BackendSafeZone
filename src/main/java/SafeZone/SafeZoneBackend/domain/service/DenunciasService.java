@@ -8,6 +8,7 @@ import SafeZone.SafeZoneBackend.persistence.entity.Regiones;
 import SafeZone.SafeZoneBackend.persistence.entity.embebidos.RegionResumen;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import SafeZone.SafeZoneBackend.domain.dto.AsignacionCasoRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,32 +31,77 @@ public class DenunciasService {
     }
     public Denuncias guardar(DenunciaRequest request) {
 
-        Regiones regionReal = regionesRepository.buscarPorId(request.getRegion().getId())
-                .orElseThrow(() -> new RuntimeException("Región no encontrada"));
+        try {
 
+            System.out.println("🔥 REQUEST RECIBIDO");
+            System.out.println(request.getUsuarioid());
+            System.out.println(request.getVictimaId());
+            System.out.println(request.getTipoViolencia());
+            System.out.println(request.getDescripcion());
 
-        Denuncias denuncia = new Denuncias();
+            Regiones regionReal = regionesRepository.buscarPorId(request.getRegion().getId())
+                    .orElseThrow(() -> new RuntimeException("Región no encontrada"));
 
-        denuncia.setId(UUID.randomUUID().toString()); // Generamos ID único
-        denuncia.setUsuarioid(request.getUsuarioid()); // Importante: Partition Key
-        denuncia.setVictimaId(request.getVictimaId());
-        denuncia.setTipoViolencia(request.getTipoViolencia());
-        denuncia.setDescripcion(request.getDescripcion());
-        denuncia.setNivelRiesgo(request.getNivelRiesgo());
-        denuncia.setDireccion(request.getDireccion());
-        denuncia.setEsAnonima(request.getEsAnonima());
+            Denuncias denuncia = new Denuncias();
 
-        // 3. Seteo de valores por defecto
-        denuncia.setEstado("PENDIENTE");
-        denuncia.setFechaDenuncia(Instant.now());
+            denuncia.setId(UUID.randomUUID().toString());
+            denuncia.setUsuarioid(request.getUsuarioid());
+            denuncia.setVictimaId(request.getVictimaId());
+            denuncia.setTipoViolencia(request.getTipoViolencia());
+            denuncia.setDescripcion(request.getDescripcion());
+            denuncia.setNivelRiesgo(request.getNivelRiesgo());
+            denuncia.setDireccion(request.getDireccion());
+            denuncia.setEsAnonima(request.getEsAnonima());
 
-        // 4. Creación del objeto embebido (Idéntico a como lo hiciste en Usuarios)
-        RegionResumen resumen = new RegionResumen();
-        resumen.setId(regionReal.getId());
-        resumen.setNombre(regionReal.getNombreRegion());
-        denuncia.setRegion(resumen);
+            denuncia.setEstado("PENDIENTE");
+            denuncia.setFechaDenuncia(Instant.now());
 
-        // 5. Guardar en Cosmos DB
+            RegionResumen resumen = new RegionResumen();
+            resumen.setId(regionReal.getId());
+            resumen.setNombre(regionReal.getNombreRegion());
+
+            denuncia.setRegion(resumen);
+
+            System.out.println("🔥 GUARDANDO EN COSMOS");
+
+            try {
+
+                Denuncias guardada = denunciasRepository.guardar(denuncia);
+
+                System.out.println("✅ GUARDADO EXITOSO");
+
+                return guardada;
+
+            } catch (Exception e) {
+
+                System.out.println("💥 ERROR COSMOS:");
+                e.printStackTrace();
+
+                throw e;
+            }
+
+        } catch (Exception e) {
+
+            System.out.println("💥 ERROR REAL:");
+            e.printStackTrace();
+
+            throw e;
+        }
+    }
+
+    public Denuncias asignarCaso(String denunciaId, AsignacionCasoRequest request) {
+
+        Denuncias denuncia = denunciasRepository.buscarPorId(denunciaId)
+                .orElseThrow(() -> new RuntimeException("Denuncia no encontrada"));
+
+        denuncia.setPsicologoId(request.getPsicologoId());
+        denuncia.setDefensorLegalId(request.getDefensorLegalId());
+        denuncia.setAsignadoPorId(request.getAsignadoPorId());
+        denuncia.setNivelRiesgo(request.getPrioridad());
+
+        denuncia.setEstado("ASIGNADO");
+        denuncia.setFechaAsignacion(Instant.now());
+
         return denunciasRepository.guardar(denuncia);
     }
 

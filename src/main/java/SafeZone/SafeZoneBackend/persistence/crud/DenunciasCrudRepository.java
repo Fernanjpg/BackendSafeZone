@@ -9,7 +9,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface DenunciasCrudRepository extends CosmosRepository<Denuncias,String> {
-    List<Denuncias> findByUsuarioId(String usuarioId);
+    @Query("SELECT * FROM c WHERE c.usuarioid = @usuarioid")
+    List<Denuncias> buscarPorUsuarioid(
+            @Param("usuarioid") String usuarioid
+    );
     @Override
     List<Denuncias> findAll();
 }

@@ -26,7 +26,10 @@ public class Denuncias {
     private String usuarioid;
 
 
-
+    private String psicologoId;
+    private String defensorLegalId;
+    private String asignadoPorId;
+    private Instant fechaAsignacion;
 
     private String victimaId;
     private String estado;         //PENDIENTE/EN_ESPERA/RESUELTO

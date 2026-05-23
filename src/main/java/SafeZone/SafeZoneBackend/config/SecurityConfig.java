@@ -40,6 +40,10 @@ public class SecurityConfig {
         return http
                 .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
+
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable())
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
 
@@ -50,11 +54,12 @@ public class SecurityConfig {
 
                         .anyRequest().authenticated()
                 )
+
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // ¡Crucial para JWT!
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // Agregamos nuestro filtro de JWT antes del filtro de login de Spring
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+
                 .build();
     }
 

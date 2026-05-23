@@ -98,9 +98,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGlobalException(
             Exception ex, WebRequest request) {
 
+        System.out.println("💥 ERROR GLOBAL:");
+        ex.printStackTrace();
+
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Ocurrió un error interno en el sistema. Contacte a soporte.",
+                ex.getMessage(),
                 request.getDescription(false));
 
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);

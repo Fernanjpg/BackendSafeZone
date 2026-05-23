@@ -87,7 +87,7 @@ public class DenunciaRequest {
         return region;
     }
 
-    public void setRegionId(RegionResumen region) {
-        this.region = this.region;
+    public void setRegion(RegionResumen region) {
+        this.region = region;
     }
 }
