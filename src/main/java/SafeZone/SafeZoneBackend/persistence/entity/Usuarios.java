@@ -4,6 +4,7 @@ package SafeZone.SafeZoneBackend.persistence.entity;
 import SafeZone.SafeZoneBackend.persistence.entity.embebidos.RegionResumen;
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,15 +20,20 @@ import java.time.Instant;
 public class Usuarios {
 
 @Id
-@PartitionKey
+
 private String id;
 
 private String nombre;
+
 private String apellido;
+@PartitionKey
+@JsonProperty("email")
 private String email;
+@JsonProperty("password")
 private String password;
 private String telefono;
-private String roles;  // VICTIMA/PSICOLOGO/DEFENSOR LEGAL
+@JsonProperty("roles")
+private String roles;
 private String estado;
 private RegionResumen region;
 @CreatedDate
