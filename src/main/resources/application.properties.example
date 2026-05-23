@@ -1,7 +1,7 @@
 spring.application.name=SafeZoneBackend
 server.port=8080
-spring.cloud.azure.cosmos.endpoint=""
-spring.cloud.azure.cosmos.key=""
+spring.cloud.azure.cosmos.endpoint=https://azurecosmo1.documents.azure.com:443/
+spring.cloud.azure.cosmos.key=J84JlngbvadXQfbKruYWUCdOdYneeAFPKQrjrbzEu3JmlfqJRxFhJsSbJLBzbqHfunUDuMcgtpr1ACDbezHBVg==
 spring.cloud.azure.cosmos.database=SafeZone
 spring.cloud.azure.cosmos.populate-query-metrics=false
 # ?? Logs ????????????????????????????????????????????????????????
@@ -11,4 +11,5 @@ logging.level.com.azure.core=WARN
 # INFO para tu c�digo
 logging.level.SafeZone=INFO
 # CONFIGURACI�N DE TU JWT (La que a�adimos al inicio)
-jwt.secret="404E635266556A586E3272357538782F413F4428472B4B6250655368566D5970"
+jwt.secret=""
+
