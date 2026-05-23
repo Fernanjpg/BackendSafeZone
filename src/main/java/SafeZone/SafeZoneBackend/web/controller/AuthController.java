@@ -26,15 +26,28 @@ public class AuthController {
      * Spring responda un 400 Bad Request inmediatamente sin gastar recursos procesando.
      */
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> registrar(@Valid @RequestBody RegisterRequest request) {
-        AuthResponse response = authService.registrar(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    public ResponseEntity<?> registrar(@Valid @RequestBody RegisterRequest request) {
+        try {
+            AuthResponse response = authService.registrar(request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            System.err.println("--- ERROR EN REGISTRO ---");
+            e.printStackTrace(); // Esto DEBE salir en la consola de IntelliJ ahora sí o sí
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.toString());
+        }
     }
 
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            AuthResponse response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("--- ERROR EN LOGIN ---");
+            e.printStackTrace(); // Esto DEBE salir en la consola de IntelliJ ahora sí o sí
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.toString());
+        }
+
     }
 }
