@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:5175"})
 @RestController
 @RequestMapping("/api/denuncias")
 public class DenunciasController {
@@ -21,6 +21,11 @@ public class DenunciasController {
     @GetMapping("/listar")
     public List<Denuncias> listar() {
         return denunciasService.listarTodas();
+    }
+
+    @GetMapping("/detalle/{id}")
+    public Denuncias obtenerDetalle(@PathVariable String id) {
+        return denunciasService.buscarPorId(id);
     }
 
     @GetMapping("/{id}")

@@ -34,6 +34,12 @@ public class DenunciasService {
         return denunciasRepository.buscarporusuarioId(id);
     }
 
+    // BUSCAR DENUNCIA POR ID
+    public Denuncias buscarPorId(String id) {
+        return denunciasRepository.buscarPorId(id)
+                .orElseThrow(() -> new RuntimeException("Denuncia no encontrada"));
+    }
+
     // RF-01 CREAR DENUNCIA
     public Denuncias guardar(DenunciaRequest request) {
 
