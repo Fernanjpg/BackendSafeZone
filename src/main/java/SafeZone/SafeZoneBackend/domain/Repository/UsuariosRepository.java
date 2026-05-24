@@ -6,6 +6,7 @@ import SafeZone.SafeZoneBackend.persistence.entity.Usuarios;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class UsuariosRepository {
@@ -23,7 +24,15 @@ public class UsuariosRepository {
         return resultados.isEmpty() ? null : resultados.get(0);
     }
 
+    public Optional<Usuarios> buscarPorId(String id) {
+        return crud.findById(id);
+    }
+
     public Usuarios guardar(Usuarios usuarios){
+        return crud.save(usuarios);
+    }
+
+    public Usuarios actualizar(Usuarios usuarios) {
         return crud.save(usuarios);
     }
 
@@ -33,6 +42,10 @@ public class UsuariosRepository {
 
     public void eliminar(Usuarios usuarios) {
         crud.delete(usuarios);
+    }
+
+    public void eliminarPorId(String id) {
+        crud.deleteById(id);
     }
 
 }

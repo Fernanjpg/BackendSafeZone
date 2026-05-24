@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 
@@ -53,6 +54,22 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+
+        /**
+         * Excepciones con código HTTP explícito — conserva el status original.
+         */
+        @ExceptionHandler(ResponseStatusException.class)
+        public ResponseEntity<ErrorResponse> handleResponseStatusException(
+                        ResponseStatusException ex, WebRequest request) {
+
+                HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+                ErrorResponse error = new ErrorResponse(
+                                status.value(),
+                                ex.getReason() != null ? ex.getReason() : ex.getMessage(),
+                                request.getDescription(false));
+
+                return new ResponseEntity<>(error, status);
+        }
 
     /**
      * Errores de validación de Bean Validation (@Valid) — HTTP 400.

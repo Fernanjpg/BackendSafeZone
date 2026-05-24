@@ -13,11 +13,12 @@ public class AuthResponse {
 
     public static AuthResponse from(String token, Usuarios usuario) {
         UserDto userDto = UserDto.builder()
-                .name(usuario.getNombre())
-                .lastName(usuario.getApellido())
-                .email(usuario.getEmail())
-                .role(usuario.getRoles())
-                .build();
+            .id(usuario.getId())
+            .name(usuario.getNombre())
+            .lastName(usuario.getApellido())
+            .email(usuario.getEmail())
+            .role(usuario.getRoles())
+            .build();
 
         return AuthResponse.builder()
                 .token(token)

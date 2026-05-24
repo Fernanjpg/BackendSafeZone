@@ -37,6 +37,17 @@ public class Denuncias {
     private Boolean esAnonima;
     private Instant fechaDenuncia;
 
+    // ── Coordenadas GPS (RF-03) ────────────────────────────────────────
+    private Double latitud;        // Pueden ser null si GPS no está disponible
+    private Double longitud;
+    private Double precision;      // en metros
+    private String direccionManual; // Entrada manual cuando GPS no funciona
+    /**
+     * Fuente de ubicación registrada. Valores posibles:
+     * "GPS" - solo GPS, "MANUAL" - solo dirección manual, "GPS_Y_MANUAL" - ambas
+     */
+    private String fuenteUbicacion;
+
     //OBJETOS EMEBEBIDOS
     private RegionResumen region;
     private UsuarioResumen usuario;

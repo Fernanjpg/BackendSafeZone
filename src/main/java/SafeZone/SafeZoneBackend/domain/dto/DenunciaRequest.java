@@ -12,6 +12,13 @@ public class DenunciaRequest {
     private String direccion;
     private Boolean esAnonima;
     private RegionResumen region;
+    
+    // ── Coordenadas GPS (RF-03) ────────────────────────────────────────
+    private Double latitud;
+    private Double longitud;
+    private Double precision;      // en metros
+    private String direccionManual; // Entrada manual cuando GPS no funciona
+    private String fuenteUbicacion; // GPS, MANUAL, GPS_Y_MANUAL
 
     public DenunciaRequest() {
     }
@@ -87,7 +94,62 @@ public class DenunciaRequest {
         return region;
     }
 
+    public void setRegion(RegionResumen region) {
+        this.region = region;
+    }
+
     public void setRegionId(RegionResumen region) {
-        this.region = this.region;
+        this.region = region;
+    }
+
+    // ── Getters y Setters para GPS ────────────────────────────────────
+    public Double getLatitud() {
+        return latitud;
+    }
+
+    public void setLatitud(Double latitud) {
+        this.latitud = latitud;
+    }
+
+    public Double getLongitud() {
+        return longitud;
+    }
+
+    public void setLongitud(Double longitud) {
+        this.longitud = longitud;
+    }
+
+    public Double getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(Double precision) {
+        this.precision = precision;
+    }
+
+    public String getDireccionManual() {
+        return direccionManual;
+    }
+
+    public void setDireccionManual(String direccionManual) {
+        this.direccionManual = direccionManual;
+    }
+
+    public String getFuenteUbicacion() {
+        return fuenteUbicacion;
+    }
+
+    public void setFuenteUbicacion(String fuenteUbicacion) {
+        this.fuenteUbicacion = fuenteUbicacion;
+    }
+
+    /**
+     * Valida que la ubicación sea completa: requiere GPS completo O dirección manual.
+     * @return true si la ubicación es válida, false en caso contrario
+     */
+    public boolean isUbicacionValida() {
+        boolean tieneGPSCompleto = latitud != null && longitud != null && precision != null;
+        boolean tieneDireccionManual = direccionManual != null && !direccionManual.trim().isEmpty();
+        return tieneGPSCompleto || tieneDireccionManual;
     }
 }

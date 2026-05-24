@@ -58,7 +58,9 @@ public class RegisterRequest {
     }
 
     public String getRoles() { return roles; }
-    public void setRoles(String rol) { this.roles = rol; }
+    public void setRoles(String rol) {
+        this.roles = rol == null ? null : rol.trim().toUpperCase();
+    }
 
     public RegionResumen getRegion() {
         return region;

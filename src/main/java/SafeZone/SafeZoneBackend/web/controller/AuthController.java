@@ -27,27 +27,15 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<?> registrar(@Valid @RequestBody RegisterRequest request) {
-        try {
-            AuthResponse response = authService.registrar(request);
-            return new ResponseEntity<>(response, HttpStatus.CREATED);
-        } catch (Exception e) {
-            System.err.println("--- ERROR EN REGISTRO ---");
-            e.printStackTrace(); // Esto DEBE salir en la consola de IntelliJ ahora sí o sí
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.toString());
-        }
+        AuthResponse response = authService.registrar(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            AuthResponse response = authService.login(request);
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            System.err.println("--- ERROR EN LOGIN ---");
-            e.printStackTrace(); // Esto DEBE salir en la consola de IntelliJ ahora sí o sí
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.toString());
-        }
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
 
     }
 }
