@@ -22,6 +22,8 @@ public class    DenunciasService {
   public DenunciasRepository denunciasRepository;
   @Autowired
   private UsuariosRepository usuariosRepository;
+  @Autowired
+  private SeguimientosService seguimientosService;
     public List<Denuncias> listarTodas() {
         return denunciasRepository.listar();
     }
@@ -46,8 +48,20 @@ public class    DenunciasService {
         denuncia.setNivelRiesgo(request.getNivelRiesgo());
         denuncia.setEstado(request.getEstado() != null ? request.getEstado() : "PENDIENTE");
         denuncia.setDireccion(request.getDireccion());
-        denuncia.setFechaDenuncia(denuncia.getFechaDenuncia());
-        return denunciasRepository.guardar(denuncia);
+        denuncia.setFechaDenuncia(Instant.now());
+        Denuncias guardada = denunciasRepository.guardar(denuncia);
+
+        // Registrar hito inicial en el seguimiento
+        seguimientosService.registrarHito(
+                guardada.getId(),
+                "SISTEMA",
+                "NOTE",
+                "La denuncia ha sido registrada en el sistema con estado: " + guardada.getEstado(),
+                null,
+                guardada.getEstado()
+        );
+
+        return guardada;
     }
 
     public Denuncias actualizar(String id, DenunciaRequest request) {
@@ -95,13 +109,30 @@ public class    DenunciasService {
             throw new RuntimeException("La denuncia ya está asignada");
         }
 
+        String estadoAnterior = denuncia.getEstado();
+
         denuncia.setPsicologoId(request.getPsicologoId());
         denuncia.setDefensorLegalId(request.getDefensorLegalId());
         denuncia.setAsignadoPorId(request.getAsignadoPorId());
         denuncia.setNivelRiesgo(request.getPrioridad());
         denuncia.setEstado("ASIGNADO");
-        denuncia.setFechaAsignacion(Instant.parse(Instant.now().toString())); // ← String para Cosmos
-        return denunciasRepository.guardar(denuncia);
+        denuncia.setFechaAsignacion(Instant.now());
+        
+        Denuncias guardada = denunciasRepository.guardar(denuncia);
+
+        // Registrar hito de asignación en el seguimiento
+        String desc = String.format("Caso asignado a profesionales. Psicólogo ID: %s, Defensor ID: %s (Asignado por: %s)",
+                request.getPsicologoId(), request.getDefensorLegalId(), request.getAsignadoPorId());
+        seguimientosService.registrarHito(
+                guardada.getId(),
+                request.getAsignadoPorId(),
+                "NOTE",
+                desc,
+                estadoAnterior,
+                "ASIGNADO"
+        );
+
+        return guardada;
     }
 
 

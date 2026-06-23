@@ -118,4 +118,14 @@ public class AlertaEmergenciaController {
         String direccion = alertaService.geocodificarInverso(lat, lon);
         return Map.of("direccion", direccion);
     }
+
+    /**
+     * Retorna la configuración de la web neutra de redirección.
+     * <p>
+     * {@code GET /api/emergency/config}
+     */
+    @GetMapping("/config")
+    public Map<String, String> obtenerConfig() {
+        return Map.of("neutralRedirectUrl", alertaService.getNeutralRedirectUrl());
+    }
 }
