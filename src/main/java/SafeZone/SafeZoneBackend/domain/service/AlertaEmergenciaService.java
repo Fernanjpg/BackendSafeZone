@@ -30,6 +30,9 @@ public class AlertaEmergenciaService {
     @Autowired
     private AlertaEmergenciaRepository alertaRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${safezone.panic.neutral-redirect-url:https://www.google.com}")
+    private String neutralRedirectUrl;
+
     // Cliente HTTP liviano de Spring 6 — sin dependencias extra
     private final RestClient restClient = RestClient.create();
 
@@ -196,6 +199,10 @@ public class AlertaEmergenciaService {
         }
     }
 
+    public String getNeutralRedirectUrl() {
+        return this.neutralRedirectUrl;
+    }
+
     // ── Mapeo entidad → DTO de respuesta ────────────────────────────────────
 
     private AlertaEmergenciaResponse toResponse(AlertaEmergencia alerta) {
@@ -216,6 +223,7 @@ public class AlertaEmergenciaService {
                 .atendidoPorNombre(alerta.getAtendidoPorNombre())
                 .atendidoEn(alerta.getAtendidoEn())
                 .resueltoEn(alerta.getResueltoEn())
+                .redireccionWebNeutra(this.neutralRedirectUrl)
                 .build();
     }
 }
