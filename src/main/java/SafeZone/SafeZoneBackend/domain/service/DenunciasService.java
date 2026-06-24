@@ -31,17 +31,38 @@ public class    DenunciasService {
     public List<Denuncias> buscarPorVictimaId(String victimId) {
         return denunciasRepository.buscarporusuarioId(victimId);
     }
+
+    public List<Denuncias> listarCasosAsignados(String profesionalId, String rol) {
+        String rolNormalizado = rol != null ? rol.toUpperCase() : "";
+
+        // AGREGA ESTO PARA DEPURAR
+        System.out.println(">>> Buscando en BD con ID: " + profesionalId);
+
+        List<Denuncias> resultados;
+        if (rolNormalizado.contains("PSYCHOLOGIST")) {
+            resultados = denunciasRepository.buscarPorPsicologoId(profesionalId);
+        } else if (rolNormalizado.contains("DEFENDER")) {
+            resultados = denunciasRepository.buscarPorDefensorLegalId(profesionalId);
+        } else {
+            throw new RuntimeException("Rol no autorizado: " + rolNormalizado);
+        }
+
+        // AGREGA ESTO
+        System.out.println(">>> Resultados encontrados: " + (resultados != null ? resultados.size() : "NULL"));
+
+        return resultados;
+    }
     public Optional<Denuncias> buscarPorUsuarioId(String id) {
         return denunciasRepository.buscarPorId(id);
     }
-    public Denuncias crearDenuncia(DenunciaRequest request, String victimId) {
+    public Denuncias crearDenuncia(DenunciaRequest request) {
         Denuncias denuncia = new Denuncias();
-
-        Usuarios usuarios = usuariosRepository.buscarUsuarioPorEmail(victimId);
-
         denuncia.setId(UUID.randomUUID().toString());
-        denuncia.setUsuarioid(usuarios.getId());
-        denuncia.setVictimaId(usuarios.getEmail());
+
+        // Usamos el UUID que viene directamente desde el Frontend
+        denuncia.setUsuarioid(request.getUsuarioid());
+        denuncia.setVictimaId(request.getUsuarioid());
+
         denuncia.setTitulo(request.getTitulo());
         denuncia.setDescripcion(request.getDescripcion());
         denuncia.setTipoViolencia(request.getTipoViolencia());
@@ -49,6 +70,7 @@ public class    DenunciasService {
         denuncia.setEstado(request.getEstado() != null ? request.getEstado() : "PENDIENTE");
         denuncia.setDireccion(request.getDireccion());
         denuncia.setFechaDenuncia(Instant.now());
+
         Denuncias guardada = denunciasRepository.guardar(denuncia);
 
         // Registrar hito inicial en el seguimiento
@@ -135,29 +157,10 @@ public class    DenunciasService {
         return guardada;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // ELIMINAR
     public void eliminar(Denuncias denuncias) {
         denunciasRepository.eliminar(denuncias);
     }
-
-
-
-
-
 
 
 }
