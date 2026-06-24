@@ -20,9 +20,20 @@ public class DenunciasRepository {
     public List<Denuncias> buscarporusuarioId(String id) {
         return crud.findByUsuarioid(id);
     }
+
+    // --- NUEVOS MÉTODOS AGREGADOS ---
+    public List<Denuncias> buscarPorPsicologoId(String psicologoId) {
+        return crud.findByPsicologoId(psicologoId);
+    }
+
+    public List<Denuncias> buscarPorDefensorLegalId(String defensorLegalId) {
+        return crud.findByDefensorLegalId(defensorLegalId);
+    }
+
     public Optional<Denuncias> buscarPorId(String id) {
         return crud.findById(id);
     }
+
     public Denuncias guardar(Denuncias denuncias) {
         return crud.save(denuncias);
     }
@@ -30,5 +41,4 @@ public class DenunciasRepository {
     public void eliminar(Denuncias denuncias) {
         crud.delete(denuncias);
     }
-
 }
