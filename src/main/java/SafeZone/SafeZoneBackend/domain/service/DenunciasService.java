@@ -22,6 +22,8 @@ public class    DenunciasService {
   public DenunciasRepository denunciasRepository;
   @Autowired
   private UsuariosRepository usuariosRepository;
+  @Autowired
+  private SeguimientosService seguimientosService;
     public List<Denuncias> listarTodas() {
         return denunciasRepository.listar();
     }
@@ -29,25 +31,59 @@ public class    DenunciasService {
     public List<Denuncias> buscarPorVictimaId(String victimId) {
         return denunciasRepository.buscarporusuarioId(victimId);
     }
+
+    public List<Denuncias> listarCasosAsignados(String profesionalId, String rol) {
+        String rolNormalizado = rol != null ? rol.toUpperCase() : "";
+
+        // AGREGA ESTO PARA DEPURAR
+        System.out.println(">>> Buscando en BD con ID: " + profesionalId);
+
+        List<Denuncias> resultados;
+        if (rolNormalizado.contains("PSYCHOLOGIST")) {
+            resultados = denunciasRepository.buscarPorPsicologoId(profesionalId);
+        } else if (rolNormalizado.contains("DEFENDER")) {
+            resultados = denunciasRepository.buscarPorDefensorLegalId(profesionalId);
+        } else {
+            throw new RuntimeException("Rol no autorizado: " + rolNormalizado);
+        }
+
+        // AGREGA ESTO
+        System.out.println(">>> Resultados encontrados: " + (resultados != null ? resultados.size() : "NULL"));
+
+        return resultados;
+    }
     public Optional<Denuncias> buscarPorUsuarioId(String id) {
         return denunciasRepository.buscarPorId(id);
     }
-    public Denuncias crearDenuncia(DenunciaRequest request, String victimId) {
+    public Denuncias crearDenuncia(DenunciaRequest request) {
         Denuncias denuncia = new Denuncias();
-
-        Usuarios usuarios = usuariosRepository.buscarUsuarioPorEmail(victimId);
-
         denuncia.setId(UUID.randomUUID().toString());
-        denuncia.setUsuarioid(usuarios.getId());
-        denuncia.setVictimaId(usuarios.getEmail());
+
+        // Usamos el UUID que viene directamente desde el Frontend
+        denuncia.setUsuarioid(request.getUsuarioid());
+        denuncia.setVictimaId(request.getUsuarioid());
+
         denuncia.setTitulo(request.getTitulo());
         denuncia.setDescripcion(request.getDescripcion());
         denuncia.setTipoViolencia(request.getTipoViolencia());
         denuncia.setNivelRiesgo(request.getNivelRiesgo());
         denuncia.setEstado(request.getEstado() != null ? request.getEstado() : "PENDIENTE");
         denuncia.setDireccion(request.getDireccion());
-        denuncia.setFechaDenuncia(denuncia.getFechaDenuncia());
-        return denunciasRepository.guardar(denuncia);
+        denuncia.setFechaDenuncia(Instant.now());
+
+        Denuncias guardada = denunciasRepository.guardar(denuncia);
+
+        // Registrar hito inicial en el seguimiento
+        seguimientosService.registrarHito(
+                guardada.getId(),
+                "SISTEMA",
+                "NOTE",
+                "La denuncia ha sido registrada en el sistema con estado: " + guardada.getEstado(),
+                null,
+                guardada.getEstado()
+        );
+
+        return guardada;
     }
 
     public Denuncias actualizar(String id, DenunciaRequest request) {
@@ -95,38 +131,36 @@ public class    DenunciasService {
             throw new RuntimeException("La denuncia ya está asignada");
         }
 
+        String estadoAnterior = denuncia.getEstado();
+
         denuncia.setPsicologoId(request.getPsicologoId());
         denuncia.setDefensorLegalId(request.getDefensorLegalId());
         denuncia.setAsignadoPorId(request.getAsignadoPorId());
         denuncia.setNivelRiesgo(request.getPrioridad());
         denuncia.setEstado("ASIGNADO");
-        denuncia.setFechaAsignacion(Instant.parse(Instant.now().toString())); // ← String para Cosmos
-        return denunciasRepository.guardar(denuncia);
+        denuncia.setFechaAsignacion(Instant.now());
+        
+        Denuncias guardada = denunciasRepository.guardar(denuncia);
+
+        // Registrar hito de asignación en el seguimiento
+        String desc = String.format("Caso asignado a profesionales. Psicólogo ID: %s, Defensor ID: %s (Asignado por: %s)",
+                request.getPsicologoId(), request.getDefensorLegalId(), request.getAsignadoPorId());
+        seguimientosService.registrarHito(
+                guardada.getId(),
+                request.getAsignadoPorId(),
+                "NOTE",
+                desc,
+                estadoAnterior,
+                "ASIGNADO"
+        );
+
+        return guardada;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // ELIMINAR
     public void eliminar(Denuncias denuncias) {
         denunciasRepository.eliminar(denuncias);
     }
-
-
-
-
-
 
 
 }

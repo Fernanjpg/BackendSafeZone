@@ -45,7 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
 
 
-                        .requestMatchers("/api/denuncias","/api/denuncias/**").hasAnyRole("VICTIM","ADMIN")
+                        // Cambia la línea de .requestMatchers("/api/denuncias",...) por esta:
+                        .requestMatchers("/api/denuncias", "/api/denuncias/**").hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
 
                         .requestMatchers("/api/victim/**").hasRole("VICTIM")
                         .requestMatchers("/api/psychologist/**").hasRole("PSYCHOLOGIST")
