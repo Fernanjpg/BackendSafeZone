@@ -9,6 +9,7 @@ public class MensajeRequest {
     @NotBlank(message = "El contenido no puede estar vacío")
     private String contenido;
 
-    @NotBlank(message = "El destinatario es obligatorio")
+    // Opcional: si viene vacío, el service lo resuelve automáticamente
+    // según los participantes de la denuncia
     private String destinatarioid;
 }

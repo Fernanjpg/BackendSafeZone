@@ -48,12 +48,14 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        // Denuncias: todos los roles autenticados pueden listar/ver
+                        // (crear y asignar siguen protegidos con @PreAuthorize en el controller)
                         .requestMatchers("/api/denuncias", "/api/denuncias/**")
                         .hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
 
-                        // RF-07: Chat — accesible para todos los roles autenticados
-                        .requestMatchers("/api/mensajes/**")
-                        .hasAnyRole("VICTIM", "PSYCHOLOGIST", "DEFENDER", "ADMIN")
+                        // RF-07: Chat — todos los roles autenticados
+                        .requestMatchers("/api/mensajes", "/api/mensajes/**")
+                        .hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
 
                         .requestMatchers("/api/victim/**").hasRole("VICTIM")
                         .requestMatchers("/api/psychologist/**").hasRole("PSYCHOLOGIST")
