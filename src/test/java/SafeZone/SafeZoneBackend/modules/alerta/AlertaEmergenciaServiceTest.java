@@ -40,6 +40,11 @@ class AlertaEmergenciaServiceTest {
     @InjectMocks
     private AlertaEmergenciaService alertaService;
 
+    @BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(alertaService, "neutralRedirectUrl", "https://www.google.com");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /** Construye una entidad guardada con los datos mínimos para las respuestas. */
@@ -209,6 +214,7 @@ class AlertaEmergenciaServiceTest {
 
             assertThat(response.getEstado()).isEqualTo("ACTIVA");
             assertThat(response.getCreadoEn()).isNotNull();
+            assertThat(response.getRedireccionWebNeutra()).isEqualTo("https://www.google.com");
         }
 
         @Test

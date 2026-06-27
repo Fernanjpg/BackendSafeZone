@@ -1,6 +1,6 @@
 package SafeZone.SafeZoneBackend.persistence.entity;
 
-
+import com.fasterxml.jackson.annotation.JsonProperty; // <-- Agregar
 import com.azure.spring.data.cosmos.core.mapping.Container;
 import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,9 @@ import java.time.Instant;
 public class Seguimientos {
     @Id
     private String id;
+
     @PartitionKey
+    @JsonProperty("denunciaid")
     private String denunciaid;
 
     private String profesionalid;
@@ -26,8 +28,4 @@ public class Seguimientos {
     private String estadoanterior;
     private String estadonuevo;
     private Instant fechaActualizacion;
-
-
-
-
 }
