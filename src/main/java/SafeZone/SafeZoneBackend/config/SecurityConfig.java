@@ -28,9 +28,13 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:5175")); // Frontend puede estar en cualquiera de estos puertos
+        config.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175"
+        ));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT","PATCH","DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
@@ -41,12 +45,17 @@ public class SecurityConfig {
                 .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
 
+                        // Denuncias: todos los roles autenticados pueden listar/ver
+                        // (crear y asignar siguen protegidos con @PreAuthorize en el controller)
+                        .requestMatchers("/api/denuncias", "/api/denuncias/**")
+                        .hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
 
-                        // Cambia la línea de .requestMatchers("/api/denuncias",...) por esta:
-                        .requestMatchers("/api/denuncias", "/api/denuncias/**").hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
+                        // RF-07: Chat — todos los roles autenticados
+                        .requestMatchers("/api/mensajes", "/api/mensajes/**")
+                        .hasAnyRole("VICTIM", "ADMIN", "PSYCHOLOGIST", "DEFENDER")
 
                         .requestMatchers("/api/victim/**").hasRole("VICTIM")
                         .requestMatchers("/api/psychologist/**").hasRole("PSYCHOLOGIST")
@@ -56,9 +65,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // ¡Crucial para JWT!
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // Agregamos nuestro filtro de JWT antes del filtro de login de Spring
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
