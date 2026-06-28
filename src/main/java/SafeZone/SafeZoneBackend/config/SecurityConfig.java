@@ -61,6 +61,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/psychologist/**").hasRole("PSYCHOLOGIST")
                         .requestMatchers("/api/defender/**").hasRole("DEFENDER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/agenda/**").permitAll()
 
                         .anyRequest().authenticated()
                 )
