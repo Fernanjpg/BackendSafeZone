@@ -4,10 +4,10 @@ import SafeZone.SafeZoneBackend.domain.dto.SeguimientoRequest;
 import SafeZone.SafeZoneBackend.domain.dto.SeguimientoResponse;
 import SafeZone.SafeZoneBackend.domain.service.SeguimientosService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+// import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -16,8 +16,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class SeguimientosController {
 
-    @Autowired
-    private SeguimientosService seguimientosService;
+    private final SeguimientosService seguimientosService;
+
+    public SeguimientosController(SeguimientosService seguimientosService) {
+        this.seguimientosService = seguimientosService;
+    }
 
     @GetMapping("/denuncia/{denunciaId}")
     public ResponseEntity<List<SeguimientoResponse>> listarPorDenuncia(@PathVariable String denunciaId) {

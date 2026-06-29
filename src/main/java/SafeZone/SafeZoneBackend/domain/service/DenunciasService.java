@@ -52,7 +52,7 @@ public class    DenunciasService {
 
         return resultados;
     }
-    public Optional<Denuncias> buscarPorUsuarioId(String id) {
+    public Optional<Denuncias> buscarDenunciaPorId(String id) {
         return denunciasRepository.buscarPorId(id);
     }
     public Denuncias crearDenuncia(DenunciaRequest request) {
