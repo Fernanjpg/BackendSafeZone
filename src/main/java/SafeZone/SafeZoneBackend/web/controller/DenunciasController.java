@@ -51,8 +51,41 @@ public class DenunciasController {
     // GET /api/reports/{id}
     @GetMapping("/{id}")
     public ResponseEntity<DenunciaResponse> obtenerPorId(@PathVariable String id) {
-        return denunciasService.buscarPorUsuarioId(id)
-                .map(d -> ResponseEntity.ok(DenunciaResponse.from(d)))
+        // 1. Obtener el usuario autenticado del contexto de seguridad
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Usuarios user = usuariosRepository.buscarUsuarioPorEmail(auth.getName());
+
+        // Verificación de seguridad: si el usuario no existe en BD
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // 2. Buscar la denuncia y aplicar validación perimetral
+        return denunciasService.buscarDenunciaPorId(id)
+                .map(denuncia -> {
+                    // Validación: ¿Es el usuario el ADMIN o el profesional asignado?
+                    // Nota: Asegúrate de que el método getRoles() devuelva el String o lista correcta
+                    boolean esAdmin = user.getRoles() != null && user.getRoles().contains("ADMIN");
+
+                    boolean esPsicologo = denuncia.getPsicologoId() != null &&
+                            denuncia.getPsicologoId().equals(user.getId());
+
+                    boolean esDefensor = denuncia.getDefensorLegalId() != null &&
+                            denuncia.getDefensorLegalId().equals(user.getId());
+
+                    boolean esAsignado = esPsicologo || esDefensor;
+
+                    if (esAdmin || esAsignado) {
+                        return ResponseEntity.ok(DenunciaResponse.from(denuncia));
+                    } else {
+                        // RF-05: El usuario está autenticado, pero NO tiene permisos sobre este recurso específico
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).<DenunciaResponse>build();
+                    }
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
