@@ -2,11 +2,16 @@ package SafeZone.SafeZoneBackend.web.controller;
 
 import SafeZone.SafeZoneBackend.domain.service.AgendaService;
 import SafeZone.SafeZoneBackend.persistence.entity.Agenda;
+
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -14,64 +19,75 @@ import java.util.Map;
 @RequestMapping("/api/agenda")
 public class AgendaController {
 
-    private final AgendaService agendaService;
+        private final AgendaService agendaService;
 
-    public AgendaController(AgendaService agendaService) {
-        this.agendaService = agendaService;
-    }
-
-    @PostMapping
-    public ResponseEntity<Agenda> crearCita(@RequestBody Agenda agenda) {
-        return ResponseEntity.ok(agendaService.guardarEvento(agenda));
-    }
-
-    @GetMapping("/{usuarioid}")
-    public ResponseEntity<List<Agenda>> listarAgenda(
-            @PathVariable String usuarioid,
-            @RequestParam String start, // Recibimos el String crudo con 'Z' de FullCalendar
-            @RequestParam String end) {
-
-        // Convertimos el string ISO con 'Z' de manera segura a LocalDateTime local
-        LocalDateTime fechaInicio = OffsetDateTime.parse(start).toLocalDateTime();
-        LocalDateTime fechaFin = OffsetDateTime.parse(end).toLocalDateTime();
-
-        return ResponseEntity.ok(agendaService.obtenerAgenda(usuarioid, fechaInicio, fechaFin));
-    }
-
-    @PatchMapping("/{id}/estado")
-    public ResponseEntity<Agenda> actualizarEstado(
-            @PathVariable String id,
-            @RequestParam String usuarioid,
-            @RequestBody Map<String, String> body) {
-
-        String nuevoEstado = body.get("estado");
-        if (nuevoEstado == null) {
-            return ResponseEntity.badRequest().build();
+        public AgendaController(AgendaService agendaService) {
+            this.agendaService = agendaService;
         }
 
-        return ResponseEntity.ok(agendaService.actualizarEstadoEvento(id, usuarioid, nuevoEstado));
-    }
+        // 1. CREAR EVENTO (La víctima crea su CITA_PSICOLOGICA o el Admin crea Audiencias)
+        @PostMapping
+        public ResponseEntity<Agenda> crearCita(
+                @RequestBody Agenda agenda,
+                Authentication authentication) {
 
-    @PatchMapping("/{id}/fechas")
-    public ResponseEntity<Agenda> actualizarFechas(
-            @PathVariable String id,
-            @RequestParam String usuarioid,
-            @RequestBody Map<String, String> body) {
-
-        String fechaInicioStr = body.get("fechaInicio");
-        String fechaFinStr = body.get("fechaFin");
-
-        if (fechaInicioStr == null || fechaFinStr == null) {
-            return ResponseEntity.badRequest().build();
+            String rolUsuario = obtenerRolLimpio(authentication);
+            Agenda guardado = agendaService.guardarEvento(agenda, rolUsuario);
+            return ResponseEntity.ok(guardado);
         }
 
-        LocalDateTime fechaInicio = OffsetDateTime.parse(fechaInicioStr).toLocalDateTime();
-        LocalDateTime fechaFin = OffsetDateTime.parse(fechaFinStr).toLocalDateTime();
-
-        if (fechaInicio.isAfter(fechaFin)) {
-            return ResponseEntity.badRequest().build();
+        // 🌟 2. VER MIS CITAS (Para la VÍCTIMA)
+        // El frontend de la víctima solo hace un GET a /api/agenda/mis-citas-victiva
+        @GetMapping("/mis-citas-victima")
+        public ResponseEntity<List<Agenda>> listarAgendaPorVictima(Authentication authentication) {
+            // Obtenemos el ID de la víctima autenticada directamente desde su token JWT
+            String victimaIdAuth = authentication.getName();
+            return ResponseEntity.ok(agendaService.obtenerAgendaCompletaPorUsuario(victimaIdAuth));
         }
 
-        return ResponseEntity.ok(agendaService.actualizarFechasEvento(id, usuarioid, fechaInicio, fechaFin));
+        // 🩺 3. VER MIS CITAS (Para el PSICÓLOGO)
+        // El psicólogo hace un GET a /api/agenda/mis-citas-psicologo para ver sus pacientes asignados
+        @GetMapping("/mis-citas-psicologo")
+        public ResponseEntity<List<Agenda>> listarCitasPsicologo(Authentication authentication) {
+            String profesionalIdAuth = authentication.getName();
+            return ResponseEntity.ok(agendaService.obtenerCitasPorPsicologo(profesionalIdAuth));
+        }
+
+        // 🛠️ 4. GESTIONAR CITA (El Psicólogo acepta/rechaza la cita pendiente de la víctima y añade el link)
+        @PutMapping("/{id}/gestionar")
+        public ResponseEntity<Agenda> gestionarCita(
+                @PathVariable String id,
+                @RequestBody Map<String, String> body,
+                Authentication authentication) {
+
+            String profesionalIdAuth = authentication.getName();
+            String nuevoEstado = body.get("estado");
+            String linkReunion = body.get("linkReunion");
+
+            if (nuevoEstado == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
+            Agenda actualizada = agendaService.gestionarCitaPorPsicologo(
+                    id,
+                    nuevoEstado,
+                    linkReunion,
+                    profesionalIdAuth
+            );
+
+            return ResponseEntity.ok(actualizada);
+        }
+
+        // 💡 Helper privado para limpiar los roles inyectados por Spring Security
+        private String obtenerRolLimpio(Authentication authentication) {
+            String rolUsuario = authentication.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .findFirst()
+                    .orElse("ROLE_VICTIM");
+
+            if (rolUsuario.startsWith("ROLE_")) {
+                rolUsuario = rolUsuario.substring(5);
+            }
+            return rolUsuario;
+        }
     }
-}

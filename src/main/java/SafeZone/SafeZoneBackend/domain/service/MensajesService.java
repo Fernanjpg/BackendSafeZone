@@ -35,15 +35,13 @@ public class MensajesService {
      * Si destinatarioid viene vacío/nulo, se resuelve automáticamente
      * según el rol del remitente y los participantes de la denuncia.
      */
-    public MensajeResponse enviarMensaje(String denunciaid, MensajeRequest request, String remitenteEmail) {
+    public MensajeResponse enviarMensaje(String denunciaid, MensajeRequest request, String remitenteId) {
         Denuncias denuncia = denunciasRepository.buscarPorId(denunciaid)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Denuncia no encontrada: " + denunciaid));
 
-        Usuarios remitente = usuariosRepository.buscarUsuarioPorEmail(remitenteEmail);
-        if (remitente == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Remitente no encontrado");
-        }
+        Usuarios remitente = usuariosRepository.buscarPorId(remitenteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Remitente no encontrado"));
 
         // Resolver destinatario automáticamente si no viene en el request
         String destinatarioId = resolverDestinatario(request.getDestinatarioid(), denuncia, remitente);
@@ -66,15 +64,13 @@ public class MensajesService {
     /**
      * Lista todos los mensajes de una denuncia.
      */
-    public List<MensajeResponse> listarMensajes(String denunciaid, String usuarioEmail) {
+    public List<MensajeResponse> listarMensajes(String denunciaid, String usuarioId) {
         Denuncias denuncia = denunciasRepository.buscarPorId(denunciaid)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Denuncia no encontrada"));
 
-        Usuarios usuario = usuariosRepository.buscarUsuarioPorEmail(usuarioEmail);
-        if (usuario == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado");
-        }
+        Usuarios usuario = usuariosRepository.buscarPorId(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no autenticado"));
 
         verificarAccesoDenuncia(denuncia, usuario);
 
@@ -93,8 +89,8 @@ public class MensajesService {
     /**
      * Marca como leídos todos los mensajes dirigidos al usuario en una denuncia.
      */
-    public void marcarComoLeidos(String denunciaid, String usuarioEmail) {
-        Usuarios usuario = usuariosRepository.buscarUsuarioPorEmail(usuarioEmail);
+    public void marcarComoLeidos(String denunciaid, String usuarioId) {
+        Usuarios usuario = usuariosRepository.buscarPorId(usuarioId).orElse(null);
         if (usuario == null) return;
 
         mensajesRepository
@@ -108,8 +104,8 @@ public class MensajesService {
     /**
      * Cuenta mensajes no leídos del usuario en todas sus denuncias.
      */
-    public int contarNoLeidos(String usuarioEmail) {
-        Usuarios usuario = usuariosRepository.buscarUsuarioPorEmail(usuarioEmail);
+    public int contarNoLeidos(String usuarioId) {
+        Usuarios usuario = usuariosRepository.buscarPorId(usuarioId).orElse(null);
         if (usuario == null) return 0;
         return mensajesRepository.buscarTodosNoLeidosPorDestinatario(usuario.getId()).size();
     }

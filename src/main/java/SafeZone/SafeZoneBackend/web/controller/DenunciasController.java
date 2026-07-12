@@ -96,9 +96,9 @@ public class DenunciasController {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String emailOrId = authentication.getName();
+        String usuarioId = authentication.getName();
 
-        Usuarios especialista = usuariosRepository.buscarUsuarioPorEmail(emailOrId);
+        Usuarios especialista = usuariosRepository.buscarPorId(usuarioId).orElse(null);
 
         if (especialista == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

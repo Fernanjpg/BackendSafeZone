@@ -41,9 +41,9 @@ public class MensajesController {
     @GetMapping("/{denunciaid}")
     public ResponseEntity<List<MensajeResponse>> listarMensajes(
             @PathVariable String denunciaid,
-            @AuthenticationPrincipal String usuarioEmail) {
+            @AuthenticationPrincipal String usuarioId) {
 
-        List<MensajeResponse> mensajes = mensajesService.listarMensajes(denunciaid, usuarioEmail);
+        List<MensajeResponse> mensajes = mensajesService.listarMensajes(denunciaid, usuarioId);
         return ResponseEntity.ok(mensajes);
     }
 
@@ -55,9 +55,9 @@ public class MensajesController {
     public ResponseEntity<MensajeResponse> enviarMensaje(
             @PathVariable String denunciaid,
             @Valid @RequestBody MensajeRequest request,
-            @AuthenticationPrincipal String usuarioEmail) {
+            @AuthenticationPrincipal String usuarioId) {
 
-        MensajeResponse response = mensajesService.enviarMensaje(denunciaid, request, usuarioEmail);
+        MensajeResponse response = mensajesService.enviarMensaje(denunciaid, request, usuarioId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -67,9 +67,9 @@ public class MensajesController {
     @PatchMapping("/{denunciaid}/leer")
     public ResponseEntity<Void> marcarComoLeidos(
             @PathVariable String denunciaid,
-            @AuthenticationPrincipal String usuarioEmail) {
+            @AuthenticationPrincipal String usuarioId) {
 
-        mensajesService.marcarComoLeidos(denunciaid, usuarioEmail);
+        mensajesService.marcarComoLeidos(denunciaid, usuarioId);
         return ResponseEntity.noContent().build();
     }
 
@@ -78,9 +78,9 @@ public class MensajesController {
      */
     @GetMapping("/no-leidos/count")
     public ResponseEntity<Map<String, Integer>> contarNoLeidos(
-            @AuthenticationPrincipal String usuarioEmail) {
+            @AuthenticationPrincipal String usuarioId) {
 
-        int total = mensajesService.contarNoLeidos(usuarioEmail);
+        int total = mensajesService.contarNoLeidos(usuarioId);
         return ResponseEntity.ok(Map.of("total", total));
     }
 }

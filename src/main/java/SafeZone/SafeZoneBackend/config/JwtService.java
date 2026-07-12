@@ -19,18 +19,26 @@ public class JwtService {
     @Value("${jwt.secret}")
     private String secretKey;
 
-    public String generateToken(Map<String, Object> extraClaims, String username) {
+    public String generateToken(Map<String, Object> extraClaims, String userId) {
         return Jwts.builder()
                 .setClaims(extraClaims)
-                .setSubject(username)
+                .setSubject(userId)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extraerUsuario(String token) {
+    public String extractUserId(String token) {
+        String userId = extractClaim(token, claims -> claims.get("userId", String.class));
+        if (userId != null && !userId.isBlank()) {
+            return userId;
+        }
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public String extraerUsuario(String token) {
+        return extractUserId(token);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
