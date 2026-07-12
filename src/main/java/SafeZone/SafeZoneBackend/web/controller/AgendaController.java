@@ -65,7 +65,6 @@ public class AgendaController {
             return ResponseEntity.badRequest().build();
         }
 
-        // Mapea con soporte nativo de strings ISO transmitidos desde JavaScript
         LocalDateTime fechaInicio = OffsetDateTime.parse(fechaInicioStr).toLocalDateTime();
         LocalDateTime fechaFin = OffsetDateTime.parse(fechaFinStr).toLocalDateTime();
 

@@ -20,7 +20,7 @@ public AgendaService(AgendaRepository agendaRepository) {
         if (evento.getId() == null || evento.getId().trim().isEmpty()) {
             evento.setId(UUID.randomUUID().toString());
         }
-        // Validación: Verificar solapamiento antes de guardar
+        // Validación: Verificar entre cruzes antes de guardar
         List<Agenda> existentes = agendaRepository.AgendarCitas(
 
 
@@ -73,7 +73,7 @@ public AgendaService(AgendaRepository agendaRepository) {
 
         return agendaRepository.guardar(evento);
     }
-
+       // 333333333333333333333
 
 
 
