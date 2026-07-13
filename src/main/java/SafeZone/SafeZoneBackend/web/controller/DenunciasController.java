@@ -1,17 +1,21 @@
 package SafeZone.SafeZoneBackend.web.controller;
 
+import SafeZone.SafeZoneBackend.domain.Repository.UsuariosRepository; // <-- IMPORTANTE
 import SafeZone.SafeZoneBackend.domain.dto.AsignacionCasoRequest;
 import SafeZone.SafeZoneBackend.domain.dto.DenunciaRequest;
 import SafeZone.SafeZoneBackend.domain.dto.DenunciaResponse;
 import SafeZone.SafeZoneBackend.domain.dto.ViolenciaRequest;
 import SafeZone.SafeZoneBackend.domain.service.DenunciasService;
 import SafeZone.SafeZoneBackend.persistence.entity.Denuncias;
+import SafeZone.SafeZoneBackend.persistence.entity.Usuarios;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,8 +25,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:5173")
 public class DenunciasController {
 
-@Autowired
-public DenunciasService denunciasService;
+    @Autowired
+    public DenunciasService denunciasService;
+
+    @Autowired
+    private UsuariosRepository usuariosRepository;
 
     // GET /api/reports?victimId=1
     @GetMapping("/listar")
@@ -52,11 +59,9 @@ public DenunciasService denunciasService;
     // POST /api/reports
     @PostMapping("/guardar")
     @PreAuthorize("hasRole('VICTIM')")
-    public ResponseEntity<DenunciaResponse> crear(
-            @Valid @RequestBody DenunciaRequest request,
-            @AuthenticationPrincipal String victimId) {
-
-        Denuncias nueva = denunciasService.crearDenuncia(request, victimId);
+    public ResponseEntity<DenunciaResponse> crear(@Valid @RequestBody DenunciaRequest request) {
+        // Quitamos el @AuthenticationPrincipal, usamos el request directo
+        Denuncias nueva = denunciasService.crearDenuncia(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(DenunciaResponse.from(nueva));
     }
 
@@ -79,23 +84,37 @@ public DenunciasService denunciasService;
         Denuncias resultado = denunciasService.registrarViolencia(id, request);
         return ResponseEntity.ok(DenunciaResponse.from(resultado));
     }
+
     @DeleteMapping("/eliminar")
     public void eliminar(@RequestBody Denuncias denuncias) {
         denunciasService.eliminar(denuncias);
     }
+
+    @GetMapping("/mis-casos")
+    @PreAuthorize("hasAnyRole('PSYCHOLOGIST', 'DEFENDER')")
+    public ResponseEntity<List<DenunciaResponse>> listarMisCasos() {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String usuarioId = authentication.getName();
+
+        Usuarios especialista = usuariosRepository.buscarPorId(usuarioId).orElse(null);
+
+        if (especialista == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String profesionalId = especialista.getId();
+        String rol = especialista.getRoles();
+
+        System.out.println(">>> Filtrando casos para el especialista ID: " + profesionalId + " con Rol: " + rol);
+
+        List<Denuncias> denunciasAsignadas = denunciasService.listarCasosAsignados(profesionalId, rol);
+
+        List<DenunciaResponse> response = denunciasAsignadas.stream()
+                .map(DenunciaResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(response);
+    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

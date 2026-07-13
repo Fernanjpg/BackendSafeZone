@@ -41,10 +41,11 @@ public class AuthService {
 
     private String generarTokenParaUsuario(Usuarios usuario) {
         Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", usuario.getId());
         extraClaims.put("rol", usuario.getRoles());
         extraClaims.put("nombreCompleto", usuario.getNombre() + " " + usuario.getApellido());
 
-        return jwtService.generateToken(extraClaims, usuario.getEmail());
+        return jwtService.generateToken(extraClaims, usuario.getId());
     }
 
     private AuthResponse generarAuthResponse(Usuarios usuario, String token) {

@@ -53,4 +53,7 @@ public class AlertaEmergenciaResponse {
     private String atendidoPorNombre;
     private Instant atendidoEn;
     private Instant resueltoEn;
+
+    // ── Redirección a Web Neutra (RF-06) ────────────────────────────────────
+    private String redireccionWebNeutra;
 }
