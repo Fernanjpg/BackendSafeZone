@@ -8,7 +8,9 @@ import SafeZone.SafeZoneBackend.domain.dto.ViolenciaRequest;
 import SafeZone.SafeZoneBackend.persistence.entity.Denuncias;
 import SafeZone.SafeZoneBackend.persistence.entity.Usuarios;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,8 +24,11 @@ public class    DenunciasService {
   public DenunciasRepository denunciasRepository;
   @Autowired
   private UsuariosRepository usuariosRepository;
-  @Autowired
-  private SeguimientosService seguimientosService;
+    @Autowired
+    private SeguimientosService seguimientosService;
+
+    @Autowired
+    private DenunciaAccessValidator denunciaAccessValidator;
     public List<Denuncias> listarTodas() {
         return denunciasRepository.listar();
     }
@@ -55,13 +60,23 @@ public class    DenunciasService {
     public Optional<Denuncias> buscarPorUsuarioId(String id) {
         return denunciasRepository.buscarPorId(id);
     }
-    public Denuncias crearDenuncia(DenunciaRequest request) {
+
+    // RF-05 — Control de acceso a denuncias por asignación/pertenencia.
+    // Valida que el usuario autenticado (extraído del JWT, nunca de un parámetro
+    // del cliente) pueda acceder a la denuncia indicada.
+    public Denuncias obtenerPorIdConAcceso(String id, String usuarioId) {
+        denunciaAccessValidator.validarAcceso(id, usuarioId);
+        return denunciasRepository.buscarPorId(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Denuncia no encontrada: " + id));
+    }
+    public Denuncias crearDenuncia(DenunciaRequest request, String usuarioId) {
         Denuncias denuncia = new Denuncias();
         denuncia.setId(UUID.randomUUID().toString());
 
-        // Usamos el UUID que viene directamente desde el Frontend
-        denuncia.setUsuarioid(request.getUsuarioid());
-        denuncia.setVictimaId(request.getUsuarioid());
+        // usuarioId viene del JWT (SecurityContext), no del body del request
+        denuncia.setUsuarioid(usuarioId);
+        denuncia.setVictimaId(usuarioId);
 
         denuncia.setTitulo(request.getTitulo());
         denuncia.setDescripcion(request.getDescripcion());
@@ -131,6 +146,13 @@ public class    DenunciasService {
             throw new RuntimeException("La denuncia ya está asignada");
         }
 
+        // Validación explícita: psicologoId es obligatorio. Esto detecta rápido
+        // bugs de integración donde el frontend no envía el campo correcto.
+        if (request.getPsicologoId() == null || request.getPsicologoId().isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "psicologoId es obligatorio para asignar el caso");
+        }
+
         String estadoAnterior = denuncia.getEstado();
 
         denuncia.setPsicologoId(request.getPsicologoId());
@@ -162,5 +184,63 @@ public class    DenunciasService {
         denunciasRepository.eliminar(denuncias);
     }
 
+    // RF-05 — Eliminar por ID (solo ADMIN). Carga la entidad para respetar
+    // la partition key antes de borrar en Cosmos.
+    public void eliminarPorId(String id) {
+        Denuncias denuncia = denunciasRepository.buscarPorId(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Denuncia no encontrada: " + id));
+        denunciasRepository.eliminar(denuncia);
+    }
 
+    // TODO: eliminar este endpoint después de ejecutar el backfill una vez en producción
+    public record BackfillResult(
+            int totalRevisadas,
+            int corregidas,
+            int yaCorrectas,
+            java.util.List<String> noResueltas
+    ) {}
+
+    public BackfillResult backfillUsuarioid() {
+        java.util.List<Denuncias> todas = denunciasRepository.listar();
+        int totalRevisadas = 0;
+        int corregidas = 0;
+        int yaCorrectas = 0;
+        java.util.List<String> noResueltas = new java.util.ArrayList<>();
+
+        for (Denuncias denuncia : todas) {
+            totalRevisadas++;
+            String usuarioidActual = denuncia.getUsuarioid();
+
+            // Verificar si el usuarioid actual corresponde a un usuario existente
+            java.util.Optional<Usuarios> usuarioExistente = usuariosRepository.buscarPorId(usuarioidActual);
+
+            if (usuarioExistente.isPresent()) {
+                yaCorrectas++;
+                continue;
+            }
+
+            // Intentar resolver usando victimaId como email
+            String victimaId = denuncia.getVictimaId();
+            Usuarios usuarioResuelto = usuariosRepository.buscarUsuarioPorEmail(victimaId);
+
+            if (usuarioResuelto != null) {
+                String usuarioidAnterior = denuncia.getUsuarioid();
+                String usuarioidNuevo = usuarioResuelto.getId();
+
+                denuncia.setUsuarioid(usuarioidNuevo);
+                denuncia.setVictimaId(usuarioidNuevo); // Igual que el flujo actual de creación
+
+                denunciasRepository.guardar(denuncia);
+                corregidas++;
+
+                System.out.printf("DENUNCIA CORREGIDA: id=%s, usuarioidAnterior=%s, usuarioidNuevo=%s%n",
+                        denuncia.getId(), usuarioidAnterior, usuarioidNuevo);
+            } else {
+                noResueltas.add(denuncia.getId());
+            }
+        }
+
+        return new BackfillResult(totalRevisadas, corregidas, yaCorrectas, noResueltas);
+    }
 }

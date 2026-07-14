@@ -4,6 +4,7 @@ import SafeZone.SafeZoneBackend.domain.service.AgendaService;
 import SafeZone.SafeZoneBackend.persistence.entity.Agenda;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ public class AgendaController {
 
         // 1. CREAR EVENTO (La víctima crea su CITA_PSICOLOGICA o el Admin crea Audiencias)
         @PostMapping
+        @PreAuthorize("hasAnyRole('VICTIM', 'ADMIN')")
         public ResponseEntity<Agenda> crearCita(
                 @RequestBody Agenda agenda,
                 Authentication authentication) {
@@ -39,6 +41,7 @@ public class AgendaController {
         // 🌟 2. VER MIS CITAS (Para la VÍCTIMA)
         // El frontend de la víctima solo hace un GET a /api/agenda/mis-citas-victiva
         @GetMapping("/mis-citas-victima")
+        @PreAuthorize("hasRole('VICTIM')")
         public ResponseEntity<List<Agenda>> listarAgendaPorVictima(Authentication authentication) {
             // Obtenemos el ID de la víctima autenticada directamente desde su token JWT
             String victimaIdAuth = authentication.getName();
@@ -48,6 +51,7 @@ public class AgendaController {
         // 🩺 3. VER MIS CITAS (Para el PSICÓLOGO)
         // El psicólogo hace un GET a /api/agenda/mis-citas-psicologo para ver sus pacientes asignados
         @GetMapping("/mis-citas-psicologo")
+        @PreAuthorize("hasRole('PSYCHOLOGIST')")
         public ResponseEntity<List<Agenda>> listarCitasPsicologo(Authentication authentication) {
             String profesionalIdAuth = authentication.getName();
             return ResponseEntity.ok(agendaService.obtenerCitasPorPsicologo(profesionalIdAuth));
@@ -55,6 +59,7 @@ public class AgendaController {
 
         // 🛠️ 4. GESTIONAR CITA (El Psicólogo acepta/rechaza la cita pendiente de la víctima y añade el link)
         @PutMapping("/{id}/gestionar")
+        @PreAuthorize("hasRole('PSYCHOLOGIST')")
         public ResponseEntity<Agenda> gestionarCita(
                 @PathVariable String id,
                 @RequestBody Map<String, String> body,

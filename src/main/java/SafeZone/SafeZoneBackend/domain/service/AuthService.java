@@ -34,6 +34,12 @@ public class AuthService {
             throw new IllegalArgumentException("Credenciales incorrectas.");
         }
 
+        // Rechazar usuarios desactivados (estado distinto de ACTIVO)
+        String estado = usuario.getEstado() != null ? usuario.getEstado().toUpperCase() : "";
+        if (!"ACTIVO".equals(estado)) {
+            throw new IllegalArgumentException("La cuenta está desactivada. Contacte al administrador.");
+        }
+
         // 5. Todo OK, generamos token
         String token = generarTokenParaUsuario(usuario);
         return generarAuthResponse(usuario, token);
