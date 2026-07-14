@@ -11,11 +11,12 @@ public interface DenunciasCrudRepository extends CosmosRepository<Denuncias, Str
     @Query("SELECT * FROM c WHERE c.usuarioid = @usuarioid")
     List<Denuncias> findByUsuarioid(@Param("usuarioid") String usuarioid);
 
-    // Cambiamos el nombre del campo en la consulta SQL para que coincida con el JSON
-    @Query("SELECT * FROM c WHERE c.psicologoid = @psicologoid")
+    // Cubre ambos casos: datos nuevos (serializados como "psicologoid" vía @JsonProperty)
+    // y datos antiguos asignados antes de agregar la anotación (guardados como "psicologoId").
+    @Query("SELECT * FROM c WHERE c.psicologoId = @psicologoid OR c.psicologoid = @psicologoid")
     List<Denuncias> findByPsicologoId(@Param("psicologoid") String psicologoId);
 
-    @Query("SELECT * FROM c WHERE c.defensorlegalid = @defensorlegalid")
+    @Query("SELECT * FROM c WHERE c.defensorLegalId = @defensorlegalid OR c.defensorlegalid = @defensorlegalid")
     List<Denuncias> findByDefensorLegalId(@Param("defensorlegalid") String defensorLegalId);
 
     @Override

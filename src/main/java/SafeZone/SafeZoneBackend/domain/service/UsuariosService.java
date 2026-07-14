@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Service
 public class UsuariosService {
 
-    private static final Set<String> ROLES_VALIDOS = Set.of("VICTIM", "PSYCHOLOGIST", "DEFENDER", "ADMIN");
+    private static final Set<String> ROLES_VALIDOS = Set.of("VICTIM", "PSYCHOLOGIST", "DEFENDER", "ADMIN", "GESTOR");
 
     @Autowired
     private UsuariosRepository usuariosRepository;
@@ -177,6 +177,20 @@ public class UsuariosService {
     public List<Usuarios> buscarPorPsicologo(String Roles) {
         return usuariosRepository.buscarUsuarioPorRol("PSYCHOLOGIST");
 
+    }
+
+    public List<UsuarioResponse> listarPorRoles(List<String> roles) {
+        return roles.stream()
+                .flatMap(rol -> usuariosRepository.buscarUsuarioPorRol(rol.toUpperCase()).stream())
+                .distinct()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    public UsuarioResponse desactivarUsuario(String id) {
+        Usuarios usuario = buscarEntidadPorId(id);
+        usuario.setEstado("INACTIVO");
+        return toResponse(usuariosRepository.actualizar(usuario));
     }
 
 

@@ -6,6 +6,7 @@ import SafeZone.SafeZoneBackend.domain.dto.SeguimientoRequest;
 import SafeZone.SafeZoneBackend.persistence.entity.Denuncias;
 import SafeZone.SafeZoneBackend.persistence.entity.Seguimientos;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -21,11 +22,27 @@ public class SeguimientosService {
     @Autowired
     private DenunciasRepository denunciasRepository;
 
+    @Autowired
+    private DenunciaAccessValidator denunciaAccessValidator;
+
+    private String getUsuarioAutenticado() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
+    private void validarAccesoCaso(String denunciaId) {
+        denunciaAccessValidator.validarAcceso(denunciaId, getUsuarioAutenticado());
+    }
+
     public List<Seguimientos> buscarPorDenunciaId(String denunciaId) {
+        // RF-05 — valida que el usuario autenticado tenga acceso al caso.
+        validarAccesoCaso(denunciaId);
         return seguimientosRepository.buscarPorDenunciaId(denunciaId);
     }
 
     public Seguimientos crearSeguimiento(SeguimientoRequest request) {
+        // RF-05 — valida que el usuario autenticado tenga acceso al caso antes de escribir.
+        validarAccesoCaso(request.getDenunciaid());
+
         Denuncias denuncia = denunciasRepository.buscarPorId(request.getDenunciaid())
                 .orElseThrow(() -> new IllegalArgumentException("Denuncia no encontrada con ID: " + request.getDenunciaid()));
 

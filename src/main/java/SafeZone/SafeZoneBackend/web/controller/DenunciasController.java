@@ -1,6 +1,6 @@
 package SafeZone.SafeZoneBackend.web.controller;
 
-import SafeZone.SafeZoneBackend.domain.Repository.UsuariosRepository; // <-- IMPORTANTE
+import SafeZone.SafeZoneBackend.domain.Repository.UsuariosRepository;
 import SafeZone.SafeZoneBackend.domain.dto.AsignacionCasoRequest;
 import SafeZone.SafeZoneBackend.domain.dto.DenunciaRequest;
 import SafeZone.SafeZoneBackend.domain.dto.DenunciaResponse;
@@ -14,11 +14,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/denuncias")
@@ -31,16 +32,28 @@ public class DenunciasController {
     @Autowired
     private UsuariosRepository usuariosRepository;
 
-    // GET /api/reports?victimId=1
     @GetMapping("/listar")
-    public ResponseEntity<List<DenunciaResponse>> listar(
-            @RequestParam(required = false) String victimId) {
+    public ResponseEntity<List<DenunciaResponse>> listar(Authentication authentication) {
+        // El id de usuario SIEMPRE se extrae del JWT, nunca de un parámetro del cliente.
+        String usuarioId = authentication.getName();
+        Usuarios usuario = usuariosRepository.buscarPorId(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Usuario no autenticado"));
 
-        System.out.println(">>> victimId recibido: " + victimId);
-        List<Denuncias> denuncias = victimId != null
-                ? denunciasService.buscarPorVictimaId(victimId)  // devuelve List
-                : denunciasService.listarTodas();
-        System.out.println(">>> total encontradas: " + denuncias.size());
+        String rol = usuario.getRoles() != null ? usuario.getRoles().toUpperCase() : "";
+
+        // ADMIN puede ver la lista completa. El resto siempre se filtra por su propio id,
+        // ignorando cualquier parámetro victimId de la query string.
+        List<Denuncias> denuncias;
+        if (rol.equals("ADMIN")) {
+            denuncias = denunciasService.listarTodas();
+        } else if (rol.equals("VICTIM")) {
+            denuncias = denunciasService.buscarPorVictimaId(usuarioId);
+        } else {
+            // PSYCHOLOGIST o DEFENDER: solo sus casos asignados.
+            denuncias = denunciasService.listarCasosAsignados(usuarioId, rol);
+        }
+
         List<DenunciaResponse> response = denuncias.stream()
                 .map(DenunciaResponse::from)
                 .toList();
@@ -48,34 +61,33 @@ public class DenunciasController {
         return ResponseEntity.ok(response);
     }
 
-    // GET /api/reports/{id}
     @GetMapping("/{id}")
     public ResponseEntity<DenunciaResponse> obtenerPorId(@PathVariable String id) {
-        return denunciasService.buscarPorUsuarioId(id)
-                .map(d -> ResponseEntity.ok(DenunciaResponse.from(d)))
-                .orElse(ResponseEntity.notFound().build());
+        // Valida pertenencia/asignación antes de devolver la denuncia (RF-05).
+        String usuarioId = SecurityContextHolder.getContext().getAuthentication().getName();
+        Denuncias denuncia = denunciasService.obtenerPorIdConAcceso(id, usuarioId);
+        return ResponseEntity.ok(DenunciaResponse.from(denuncia));
     }
 
-    // POST /api/reports
     @PostMapping("/guardar")
     @PreAuthorize("hasRole('VICTIM')")
     public ResponseEntity<DenunciaResponse> crear(@Valid @RequestBody DenunciaRequest request) {
-        // Quitamos el @AuthenticationPrincipal, usamos el request directo
-        Denuncias nueva = denunciasService.crearDenuncia(request);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String usuarioId = authentication.getName();
+
+        Denuncias nueva = denunciasService.crearDenuncia(request, usuarioId);
         return ResponseEntity.status(HttpStatus.CREATED).body(DenunciaResponse.from(nueva));
     }
 
-    // RF-09 ASIGANAR DENUNCIA A PROFESIONALES
     @PatchMapping("/{id}/asignar")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DenunciaResponse> asignarCaso(
             @PathVariable String id,
-            @RequestBody AsignacionCasoRequest request) {
+            @Valid @RequestBody AsignacionCasoRequest request) {
         Denuncias resultado = denunciasService.asignarCaso(id, request);
         return ResponseEntity.ok(DenunciaResponse.from(resultado));
     }
 
-    // RF-02
     @PatchMapping("/{id}/violencia")
     @PreAuthorize("hasRole('VICTIM')")
     public ResponseEntity<DenunciaResponse> registrarViolencia(
@@ -85,9 +97,11 @@ public class DenunciasController {
         return ResponseEntity.ok(DenunciaResponse.from(resultado));
     }
 
-    @DeleteMapping("/eliminar")
-    public void eliminar(@RequestBody Denuncias denuncias) {
-        denunciasService.eliminar(denuncias);
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> eliminar(@PathVariable String id) {
+        denunciasService.eliminarPorId(id);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/mis-casos")
@@ -96,9 +110,9 @@ public class DenunciasController {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        String emailOrId = authentication.getName();
+        String usuarioId = authentication.getName();
 
-        Usuarios especialista = usuariosRepository.buscarUsuarioPorEmail(emailOrId);
+        Usuarios especialista = usuariosRepository.buscarPorId(usuarioId).orElse(null);
 
         if (especialista == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -114,6 +128,21 @@ public class DenunciasController {
         List<DenunciaResponse> response = denunciasAsignadas.stream()
                 .map(DenunciaResponse::from)
                 .toList();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/admin/backfill-usuarioid")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> backfillUsuarioid() {
+        DenunciasService.BackfillResult result = denunciasService.backfillUsuarioid();
+
+        Map<String, Object> response = Map.of(
+                "totalRevisadas", result.totalRevisadas(),
+                "corregidas", result.corregidas(),
+                "yaCorrectas", result.yaCorrectas(),
+                "noResueltas", result.noResueltas()
+        );
 
         return ResponseEntity.ok(response);
     }

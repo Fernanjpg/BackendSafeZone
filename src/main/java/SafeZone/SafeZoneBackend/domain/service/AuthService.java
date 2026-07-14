@@ -34,6 +34,12 @@ public class AuthService {
             throw new IllegalArgumentException("Credenciales incorrectas.");
         }
 
+        // Rechazar usuarios desactivados (estado distinto de ACTIVO)
+        String estado = usuario.getEstado() != null ? usuario.getEstado().toUpperCase() : "";
+        if (!"ACTIVO".equals(estado)) {
+            throw new IllegalArgumentException("La cuenta está desactivada. Contacte al administrador.");
+        }
+
         // 5. Todo OK, generamos token
         String token = generarTokenParaUsuario(usuario);
         return generarAuthResponse(usuario, token);
@@ -41,10 +47,11 @@ public class AuthService {
 
     private String generarTokenParaUsuario(Usuarios usuario) {
         Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("userId", usuario.getId());
         extraClaims.put("rol", usuario.getRoles());
         extraClaims.put("nombreCompleto", usuario.getNombre() + " " + usuario.getApellido());
 
-        return jwtService.generateToken(extraClaims, usuario.getEmail());
+        return jwtService.generateToken(extraClaims, usuario.getId());
     }
 
     private AuthResponse generarAuthResponse(Usuarios usuario, String token) {
