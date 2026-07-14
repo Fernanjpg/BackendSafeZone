@@ -7,7 +7,10 @@ import SafeZone.SafeZoneBackend.domain.service.AlertaEmergenciaService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,7 @@ public class AlertaEmergenciaController {
      * {@code POST /api/emergency/alerts}
      */
     @PostMapping("/alerts")
+    @PreAuthorize("hasRole('VICTIM')")
     @ResponseStatus(HttpStatus.CREATED)
     public AlertaEmergenciaResponse crear(@Valid @RequestBody AlertaEmergenciaRequest request) {
         return alertaService.crearAlerta(request);
@@ -46,13 +50,12 @@ public class AlertaEmergenciaController {
     // ── Consultas ────────────────────────────────────────────────────────────
 
     /**
-     * Lista alertas.  Los profesionales usan {@code ?status=ACTIVA} para ver
-     * solo las que requieren atención inmediata.
+     * Lista alertas activas (para que los profesionales las atiendan).
      * <p>
-     * {@code GET /api/emergency/alerts}
      * {@code GET /api/emergency/alerts?status=ACTIVA}
      */
     @GetMapping("/alerts")
+    @PreAuthorize("hasAnyRole('ADMIN','PSYCHOLOGIST','DEFENDER')")
     public List<AlertaEmergenciaResponse> listar(
             @RequestParam(required = false) String status) {
         if ("ACTIVE".equalsIgnoreCase(status) || "ACTIVA".equalsIgnoreCase(status)) {
@@ -63,12 +66,23 @@ public class AlertaEmergenciaController {
 
     /**
      * Historial de alertas de una víctima — útil para el dashboard de la víctima.
+     * Una víctima solo puede consultar SUS propias alertas; los profesionales
+     * y el admin pueden consultar las de cualquier víctima (son los respondedores).
      * <p>
      * {@code GET /api/emergency/alerts/victima/{victimaId}}
      */
     @GetMapping("/alerts/victima/{victimaId}")
+    @PreAuthorize("hasAnyRole('VICTIM','PSYCHOLOGIST','DEFENDER','ADMIN')")
     public List<AlertaEmergenciaResponse> listarPorVictima(
-            @PathVariable String victimaId) {
+            @PathVariable String victimaId,
+            Authentication authentication) {
+        String usuarioId = authentication.getName();
+        boolean esVictima = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_VICTIM"));
+        if (esVictima && !victimaId.equals(usuarioId)) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "No tienes acceso a las alertas de otra víctima");
+        }
         return alertaService.obtenerPorVictima(victimaId);
     }
 
@@ -80,6 +94,7 @@ public class AlertaEmergenciaController {
      * {@code PATCH /api/emergency/alerts/{id}/attend}
      */
     @PatchMapping("/alerts/{id}/attend")
+    @PreAuthorize("hasAnyRole('PSYCHOLOGIST','DEFENDER','ADMIN')")
     public AlertaEmergenciaResponse atender(
             @PathVariable String id,
             @RequestBody AtenderAlertaRequest request) {
@@ -92,6 +107,7 @@ public class AlertaEmergenciaController {
      * {@code PATCH /api/emergency/alerts/{id}/resolve}
      */
     @PatchMapping("/alerts/{id}/resolve")
+    @PreAuthorize("hasAnyRole('PSYCHOLOGIST','DEFENDER','ADMIN')")
     public AlertaEmergenciaResponse resolver(@PathVariable String id) {
         return alertaService.resolverAlerta(id);
     }
@@ -101,17 +117,10 @@ public class AlertaEmergenciaController {
     /**
      * Convierte coordenadas GPS en una dirección legible (reverse geocoding).
      * <p>
-     * El frontend llama a este endpoint cuando el GPS está disponible pero
-     * quiere mostrar la dirección en texto al usuario.
-     * Usa Nominatim — 100 % gratuito, sin API key.
-     * <p>
      * {@code GET /api/emergency/geocode?lat={latitud}&lon={longitud}}
-     *
-     * @param lat latitud WGS-84
-     * @param lon longitud WGS-84
-     * @return JSON con la dirección: {@code {"direccion": "..."}}
      */
     @GetMapping("/geocode")
+    @PreAuthorize("hasAnyRole('VICTIM','PSYCHOLOGIST','DEFENDER','ADMIN')")
     public Map<String, String> geocodificar(
             @RequestParam Double lat,
             @RequestParam Double lon) {
@@ -125,6 +134,7 @@ public class AlertaEmergenciaController {
      * {@code GET /api/emergency/config}
      */
     @GetMapping("/config")
+    @PreAuthorize("hasAnyRole('VICTIM','PSYCHOLOGIST','DEFENDER','ADMIN')")
     public Map<String, String> obtenerConfig() {
         return Map.of("neutralRedirectUrl", alertaService.getNeutralRedirectUrl());
     }

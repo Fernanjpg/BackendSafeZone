@@ -20,7 +20,6 @@ public class DataInitializer {
     @Bean
     CommandLineRunner loadRegiones(RegionesRepository regionesRepository) {
         return args -> {
-            // Verificamos si ya existen datos para no duplicarlos cada vez que inicies
             if (regionesRepository.listarTodas().isEmpty()) {
 
                 List<Regiones> regionesPeru = List.of(
@@ -65,25 +64,6 @@ public class DataInitializer {
     @Bean
     CommandLineRunner loadUsuarios(UsuariosRepository usuariosRepository, RegionesRepository regionesRepository, PasswordEncoder passwordEncoder) {
         return args -> {
-            // Eliminar usuarios existentes de prueba para forzar recarga
-            Usuarios adminExistente = usuariosRepository.buscarUsuarioPorEmail("admin@example.com");
-            if (adminExistente != null) {
-                usuariosRepository.eliminar(adminExistente);
-            }
-            Usuarios mariaExistente = usuariosRepository.buscarUsuarioPorEmail("maria@example.com");
-            if (mariaExistente != null) {
-                usuariosRepository.eliminar(mariaExistente);
-            }
-            Usuarios patriciaExistente = usuariosRepository.buscarUsuarioPorEmail("patricia@example.com");
-            if (patriciaExistente != null) {
-                usuariosRepository.eliminar(patriciaExistente);
-            }
-            Usuarios carlosExistente = usuariosRepository.buscarUsuarioPorEmail("carlos@example.com");
-            if (carlosExistente != null) {
-                usuariosRepository.eliminar(carlosExistente);
-            }
-
-            // Obtener la región Lima para los usuarios
             List<Regiones> regiones = regionesRepository.listarTodas();
             Regiones regionLima = regiones.stream()
                     .filter(r -> r.getNombreRegion().equals("Lima"))
@@ -94,60 +74,57 @@ public class DataInitializer {
             regionResumen.setId(regionLima.getId());
             regionResumen.setNombre(regionLima.getNombreRegion());
 
-            // Crear usuarios de prueba con contraseñas nuevas
-            Usuarios admin = new Usuarios();
-            admin.setId(java.util.UUID.randomUUID().toString());
-            admin.setNombre("Administrador");
-            admin.setApellido("Sistema");
-            admin.setEmail("admin@example.com");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setTelefono("+34 123 456 789");
-            admin.setRoles("ADMIN");
-            admin.setEstado("ACTIVO");
-            admin.setRegion(regionResumen);
-            admin.setFecharegistro(java.time.Instant.now());
-            usuariosRepository.guardar(admin);
+            String[] emails = {"admin@example.com", "maria@example.com", "patricia@example.com", "carlos@example.com"};
+            int creados = 0;
 
-            Usuarios maria = new Usuarios();
-            maria.setId(java.util.UUID.randomUUID().toString());
-            maria.setNombre("María");
-            maria.setApellido("García");
-            maria.setEmail("maria@example.com");
-            maria.setPassword(passwordEncoder.encode("password123"));
-            maria.setTelefono("+34 987 654 321");
-            maria.setRoles("VICTIM");
-            maria.setEstado("ACTIVO");
-            maria.setRegion(regionResumen);
-            maria.setFecharegistro(java.time.Instant.now());
-            usuariosRepository.guardar(maria);
+            for (String email : emails) {
+                if (usuariosRepository.buscarUsuarioPorEmail(email) == null) {
+                    Usuarios usuario = new Usuarios();
+                    usuario.setId(UUID.randomUUID().toString());
+                    usuario.setEmail(email);
+                    usuario.setPassword(passwordEncoder.encode("password123"));
+                    usuario.setTelefono("+34 000 000 000");
+                    usuario.setEstado("ACTIVO");
+                    usuario.setRegion(regionResumen);
+                    usuario.setFecharegistro(Instant.now());
 
-            Usuarios patricia = new Usuarios();
-            patricia.setId(java.util.UUID.randomUUID().toString());
-            patricia.setNombre("Patricia");
-            patricia.setApellido("López");
-            patricia.setEmail("patricia@example.com");
-            patricia.setPassword(passwordEncoder.encode("password123"));
-            patricia.setTelefono("+34 555 666 777");
-            patricia.setRoles("PSYCHOLOGIST");
-            patricia.setEstado("ACTIVO");
-            patricia.setRegion(regionResumen);
-            patricia.setFecharegistro(java.time.Instant.now());
-            usuariosRepository.guardar(patricia);
+                    switch (email) {
+                        case "admin@example.com" -> {
+                            usuario.setNombre("Administrador");
+                            usuario.setApellido("Sistema");
+                            usuario.setRoles("ADMIN");
+                            usuario.setTelefono("+34 123 456 789");
+                        }
+                        case "maria@example.com" -> {
+                            usuario.setNombre("María");
+                            usuario.setApellido("García");
+                            usuario.setRoles("VICTIM");
+                            usuario.setTelefono("+34 987 654 321");
+                        }
+                        case "patricia@example.com" -> {
+                            usuario.setNombre("Patricia");
+                            usuario.setApellido("López");
+                            usuario.setRoles("PSYCHOLOGIST");
+                            usuario.setTelefono("+34 555 666 777");
+                        }
+                        case "carlos@example.com" -> {
+                            usuario.setNombre("Carlos");
+                            usuario.setApellido("Rodríguez");
+                            usuario.setRoles("DEFENDER");
+                            usuario.setTelefono("+34 444 333 222");
+                        }
+                    }
 
-            Usuarios carlos = new Usuarios();
-            carlos.setId(java.util.UUID.randomUUID().toString());
-            carlos.setNombre("Carlos");
-            carlos.setApellido("Rodríguez");
-            carlos.setEmail("carlos@example.com");
-            carlos.setPassword(passwordEncoder.encode("password123"));
-            carlos.setTelefono("+34 444 333 222");
-            carlos.setRoles("DEFENDER");
-            carlos.setEstado("ACTIVO");
-            carlos.setRegion(regionResumen);
-            carlos.setFecharegistro(java.time.Instant.now());
-            usuariosRepository.guardar(carlos);
+                    usuariosRepository.guardar(usuario);
+                    creados++;
+                }
+            }
 
-            System.out.println("✅ Se han cargado 4 usuarios de prueba en Cosmos DB.");
+            if (creados > 0) {
+                System.out.println("✅ Se han creado " + creados + " usuarios de prueba en Cosmos DB.");
+            } else {
+                System.out.println("ℹ️ Los usuarios de prueba ya existen en la base de datos, saltando carga inicial.");
+            }
         };
     }
 }

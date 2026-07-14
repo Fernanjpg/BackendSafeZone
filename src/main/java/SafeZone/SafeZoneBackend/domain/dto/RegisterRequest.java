@@ -23,7 +23,7 @@ public class RegisterRequest {
     @NotBlank(message = "El telefono no puede estar vacía")
     private String telefono;
     @NotBlank(message = "El rol es obligatorio")
-    @Pattern(regexp = "VICTIM|PSYCHOLOGIST|DEFENDER|ADMIN", message = "Rol no válido")
+    @Pattern(regexp = "VICTIM|PSYCHOLOGIST|DEFENDER|ADMIN|GESTOR", message = "Rol no válido")
     private String roles;
 
     private RegionResumen region;
