@@ -30,6 +30,7 @@ public class SecurityConfig {
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
         config.setAllowedOrigins(List.of(frontendUrl, "http://localhost:5173", "http://localhost:5174"));
